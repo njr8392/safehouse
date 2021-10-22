@@ -94,13 +94,13 @@ func SetOrigin(f *os.File) error {
 }
 
 var (
-	flagGet  = flag.String("g", "", "get desired info")
-	flagList = flag.Bool("l", false, "list all decrypted information")
-	addCmd   = flag.NewFlagSet("add", flag.ExitOnError)
-	alias    = addCmd.String("alias", "", "Name of site")
-	url      = addCmd.String("url", "", "Url of site")
-	pword    = addCmd.String("password", "", "Password for the site")
-	//flagChange = flag.String("c", "", "change password of site")
+	flagGet    = flag.String("g", "", "get desired info")
+	flagList   = flag.Bool("l", false, "list all decrypted information")
+	addCmd     = flag.NewFlagSet("add", flag.ExitOnError)
+	alias      = addCmd.String("alias", "", "Name of site")
+	url        = addCmd.String("url", "", "Url of site")
+	pword      = addCmd.String("password", "", "Password for the site")
+	flagChange = flag.String("c", "", "change password of site")
 )
 
 func run() {
@@ -127,8 +127,12 @@ func run() {
 		np := NewPassword(*alias, *url, *pword)
 		fmt.Println(np)
 		list.Append(np)
-		fmt.Println(list)
-		err := list.EncodeAll(file)
+
+		err := SetOrigin(file)
+		if err != nil {
+			fmt.Printf("error setting file origin to 0 ----- %s\n", err)
+		}
+		err = list.EncodeAll(file)
 		if err != nil {
 			fmt.Printf("error encoding data ---- %s", err)
 		}
@@ -140,6 +144,21 @@ func run() {
 
 	if *flagList {
 		list.ListAll()
+	}
+
+	if *flagChange != "" && *flagGet != "" {
+		pass := list.Get(*flagGet)
+		if pass == nil {
+			fmt.Printf("No password for %s found\n", *flagGet)
+			return
+		}
+		pass.Password, pass.Modified = *flagChange, time.Now()
+		SetOrigin(file)
+		err := list.EncodeAll(file)
+		if err != nil {
+			fmt.Printf("error encoding data ---- %s", err)
+		}
+		fmt.Printf("Password for %s changed to %s\n", pass.Name, pass.Password)
 	}
 }
 
