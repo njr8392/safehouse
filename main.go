@@ -101,6 +101,10 @@ var (
 	url        = addCmd.String("url", "", "Url of site")
 	pword      = addCmd.String("password", "", "Password for the site")
 	flagChange = flag.String("c", "", "change password of site")
+	encryptCmd = flag.NewFlagSet("encrypt", flag.ExitOnError)
+	enkey      = encryptCmd.String("k", "", "key")
+	decryptCmd = flag.NewFlagSet("decrypt", flag.ExitOnError)
+	deckey     = decryptCmd.String("k", "", "key")
 )
 
 func run() {
@@ -110,9 +114,9 @@ func run() {
 
 	file, err := DB()
 	defer file.Close()
-	err = list.DecodeAll(file)
+//	err = list.DecodeAll(file)
 	if err != nil {
-		fmt.Printf("error decoding file ---- %s\n", err)
+		fmt.Printf("error opening file ---- %s\n", err)
 		file.Close()
 		os.Exit(1)
 	}
@@ -137,7 +141,58 @@ func run() {
 			fmt.Printf("error encoding data ---- %s", err)
 		}
 	}
+	if os.Args[1] == "encrypt" {
+		encryptCmd.Parse(os.Args[2:])
+		if *enkey == "" {
+			fmt.Printf("Invalid key. Must pass key with -k flag")
+			return
+		}
+		fmt.Println(*enkey, len(*enkey))
+		cipher, err := Encrypt([]byte(*enkey), file)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		fmt.Println(cipher)
+
+		//could maybe use file.WriteAt instead of calling offset (2 syscalls)
+		_, err = file.WriteAt(cipher,0)
+		if err != nil {
+			fmt.Println(err)
+		}
+		return
+
+	}
+	if os.Args[1] == "decrypt" {
+		decryptCmd.Parse(os.Args[2:])
+		//add in check. key must be 32 bytes!
+		if *deckey == "" {
+			fmt.Printf("Invalid key. Must pass key with -k flag")
+			return
+		}
+		txt, err := Decrypt([]byte(*deckey), file)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		//could maybe use file.WriteAt instead of calling offset (2 syscalls)
+		_, err = file.WriteAt(txt,0)
+		if err != nil {
+			fmt.Println(err)
+		}
+		return
+
+	}
+	// add list here so you don't have to declare one inside every if
+
 	if *flagGet != "" {
+		var list List
+		err := list.DecodeAll(file)
+		if err != nil{
+			fmt.Println(err)
+			return
+		}
 		pass := list.Get(*flagGet)
 		fmt.Printf("%v\n", pass)
 	}
