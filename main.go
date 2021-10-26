@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/gob"
+	"crypto/sha256"
 	"flag"
 	"fmt"
 	"io"
@@ -114,7 +115,7 @@ func run() {
 
 	file, err := DB()
 	defer file.Close()
-//	err = list.DecodeAll(file)
+	//	err = list.DecodeAll(file)
 	if err != nil {
 		fmt.Printf("error opening file ---- %s\n", err)
 		file.Close()
@@ -147,8 +148,9 @@ func run() {
 			fmt.Printf("Invalid key. Must pass key with -k flag")
 			return
 		}
-		fmt.Println(*enkey, len(*enkey))
-		cipher, err := Encrypt([]byte(*enkey), file)
+		key := sha256.Sum256([]byte(*enkey))
+		k := CopySha256(key)
+		cipher, err := Encrypt(k, file)
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -156,7 +158,7 @@ func run() {
 		fmt.Println(cipher)
 
 		//could maybe use file.WriteAt instead of calling offset (2 syscalls)
-		_, err = file.WriteAt(cipher,0)
+		_, err = file.WriteAt(cipher, 0)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -170,14 +172,16 @@ func run() {
 			fmt.Printf("Invalid key. Must pass key with -k flag")
 			return
 		}
-		txt, err := Decrypt([]byte(*deckey), file)
+		key := sha256.Sum256([]byte(*deckey))
+		k := CopySha256(key)
+		txt, err := Decrypt(k, file)
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
 
 		//could maybe use file.WriteAt instead of calling offset (2 syscalls)
-		_, err = file.WriteAt(txt,0)
+		_, err = file.WriteAt(txt, 0)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -189,7 +193,7 @@ func run() {
 	if *flagGet != "" {
 		var list List
 		err := list.DecodeAll(file)
-		if err != nil{
+		if err != nil {
 			fmt.Println(err)
 			return
 		}

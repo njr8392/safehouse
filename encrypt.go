@@ -18,11 +18,10 @@ func Encrypt(key []byte, file *os.File) ([]byte, error) {
 	size, _ := FileSize(file)
 	txt := make([]byte, size)
 	n, err := io.ReadFull(file, txt)
-	fmt.Printf("read %d bytes from store", n)
+	fmt.Printf("read %d bytes from store\n", n)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(txt)
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
@@ -85,4 +84,12 @@ func FileSize(f *os.File) (int64, error) {
 	}
 
 	return stat.Size(), nil
+}
+
+func CopySha256(hash [32]byte)[]byte{
+	var b []byte
+	for _, h := range hash{
+		b = append(b, h)
+	}
+	return b
 }
