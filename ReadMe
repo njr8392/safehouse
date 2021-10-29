@@ -1,0 +1,8 @@
+After a horrible experience I needed a better way to manage my passwords.  I didn't want to use the one
+provided by google because I am unsure if I will be using their browser 10,20 or 30 years from now.  This aims 
+to solve these issue.
+
+The design is straight foward. It will be a command line tool where you can fetch, list, add, and change passwords.
+The database is gob(binary) encoded array of passwords with some metadata. The database is then encrypted and decrypted 
+using AES-256 in GCM mode.  It is the users responsibilty to encrypt the file. Once encrypted a copy can be store in multiple
+places. A local server, disk, usb or whatever you like!
